@@ -1,11 +1,11 @@
 import 'package:test/test.dart';
-import 'package:bachat/services/transactions/transactions.dart';
+import 'package:bachat/models/transaction.dart' as mt;
 
 
 void main() {
   group('TransactionModel', () {
     test('should map json to model successfully', () async {
-      final TransactionModel tx = TransactionModel.fromMap({
+      final mt.Transaction tx = mt.Transaction.fromMap({
         "payee": "OMA SPOON",
         "amount": 9,
         "date": "19/12/24",
@@ -15,8 +15,8 @@ void main() {
       });
       expect(tx.payee, equals("OMA SPOON"));
       expect(tx.amount, equals(9.0));
-      expect(tx.date, equals("19/12/24"));
-      expect(tx.type, equals(TransactionType.debit));
+      expect(tx.txDate, equals("19/12/24"));
+      expect(tx.type, equals("debit"));
       expect(tx.category, equals("Dining"));
       expect(tx.sourceAccount, equals("UOB Card ending 5267"));
     });

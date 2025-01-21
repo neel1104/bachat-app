@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:bachat/services/llm/llm.dart';
-import 'package:bachat/services/transactions/transactions.dart';
+import 'package:bachat/services/transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:flutter_chat_ui/flutter_chat_ui.dart' as chatUI;

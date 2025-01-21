@@ -1,10 +1,14 @@
+import 'package:bachat/models/category.dart';
+import 'package:bachat/services/category.dart';
+import 'package:bachat/services/transaction.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
-import 'package:bachat/services/transactions/transactions.dart';
+import '../models/transaction.dart' as mt;
 
 class TransactionFormScreen extends StatefulWidget {
-  final TransactionModel tx;
+  final mt.Transaction tx;
+
   const TransactionFormScreen({super.key, required this.tx});
 
   @override
@@ -13,6 +17,31 @@ class TransactionFormScreen extends StatefulWidget {
 
 class _TransactionFormScreenState extends State<TransactionFormScreen> {
   DateTime? _selectedDateTime;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Edit Transaction'),
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TransactionForm(
+            selectedDateTime: _selectedDateTime,
+            onPickDateTime: () => _pickDateTime(context),
+            tx: widget.tx,
+            onGuess: ()=>{},
+            onSave: ()=>{},
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleSave (txn) async {
+    TransactionsService().update(txn);
+  }
 
   void _pickDateTime(BuildContext context) async {
     final DateTime? date = await showDatePicker(
@@ -30,42 +59,28 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
       if (time != null) {
         setState(() {
-          _selectedDateTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+          _selectedDateTime =
+              DateTime(date.year, date.month, date.day, time.hour, time.minute);
         });
       }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Edit Transaction'),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: TransactionForm(
-            selectedDateTime: _selectedDateTime,
-            onPickDateTime: () => _pickDateTime(context),
-            tx: widget.tx,
-          ),
-        ),
-      ),
-    );
   }
 }
 
 class TransactionForm extends StatelessWidget {
   final DateTime? selectedDateTime;
   final VoidCallback onPickDateTime;
-  final TransactionModel tx;
+  final mt.Transaction tx;
+  final VoidCallback onSave;
+  final VoidCallback onGuess;
 
   const TransactionForm({
     super.key,
     required this.selectedDateTime,
     required this.onPickDateTime,
     required this.tx,
+    required this.onSave,
+    required this.onGuess,
   });
 
   @override
@@ -73,59 +88,28 @@ class TransactionForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FormField(
-          title: 'Timestamp',
-          child: TextField(
-            readOnly: true,
-            decoration: InputDecoration(
-              hintText: selectedDateTime == null
-                  ? 'Select date and time'
-                  : DateFormat('yyyy-MM-dd – HH:mm').format(selectedDateTime!),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-            ),
-            onTap: onPickDateTime,
+        TextFormField(
+          initialValue: tx.txDate?.toLocal().toString(),
+          readOnly: true,
+          decoration: InputDecoration(
+            hintText: selectedDateTime == null
+                ? 'Transaction time'
+                : DateFormat('yyyy-MM-dd – HH:mm').format(selectedDateTime!),
+            border: UnderlineInputBorder(),
+          ),
+          onTap: onPickDateTime,
+        ),
+        SizedBox(height: 16.0),
+        DropdownButtonFormField(
+          value: tx.category,
+          items: availableCategories(),
+          onChanged: (value) {},
+          decoration: InputDecoration(
+            hintText: 'Select category',
+            border: UnderlineInputBorder(),
           ),
         ),
         SizedBox(height: 16.0),
-        FormField(
-          title: 'Category',
-          child: DropdownButtonFormField<String>(
-            value: tx.category,
-            items: availableCategories(),
-            onChanged: (value) {},
-            decoration: InputDecoration(
-              hintText: 'Select category',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: 16.0),
-        // FormField(
-        //   title: 'Source account',
-        //   child: DropdownButtonFormField<String>(
-        //     items: [
-        //       DropdownMenuItem(
-        //         child: Text('Account 1'),
-        //         value: 'Account 1',
-        //       ),
-        //       DropdownMenuItem(
-        //         child: Text('Account 2'),
-        //         value: 'Account 2',
-        //       ),
-        //     ],
-        //     onChanged: (value) {},
-        //     decoration: InputDecoration(
-        //       hintText: 'Select source account',
-        //       border: OutlineInputBorder(
-        //         borderRadius: BorderRadius.circular(8.0),
-        //       ),
-        //     ),
-        //   ),
-        // ),
         TextFormField(
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(
@@ -133,7 +117,7 @@ class TransactionForm extends StatelessWidget {
             labelText: 'Source Account',
           ),
           initialValue: tx.sourceAccount,
-          readOnly: true,
+          // readOnly: true,
         ),
         SizedBox(height: 16.0),
         TextFormField(
@@ -143,7 +127,7 @@ class TransactionForm extends StatelessWidget {
             labelText: 'Payee',
           ),
           initialValue: tx.payee,
-          readOnly: true,
+          // readOnly: true,
         ),
         SizedBox(height: 16.0),
         TextFormField(
@@ -156,63 +140,52 @@ class TransactionForm extends StatelessWidget {
           readOnly: true,
         ),
         SizedBox(height: 24.0),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-
-            },
-            child: Text('Save'),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            ElevatedButton.icon(
+              icon: Icon(Icons.save),
+              onPressed: onSave,
+              label: Text('Save'),
+            ),
+            ElevatedButton.icon(
+              icon: Icon(Icons.auto_awesome),
+              onPressed: onGuess,
+              label: Text('Guess'),
+            )
+          ],
         ),
+        SizedBox(height: 16.0),
+        TextFormField(
+          keyboardType: TextInputType.multiline,
+          maxLines: null,
+          decoration: const InputDecoration(
+            border: UnderlineInputBorder(),
+            labelText: 'Raw',
+          ),
+          initialValue: tx.raw,
+          style: TextStyle(),
+          readOnly: true,
+        )
       ],
     );
   }
 }
 
-List<DropdownMenuItem<String>> availableCategories () {
-  return[
-    DropdownMenuItem(
-      value: 'Shopping',
-      child: Row(
-        children: [
-          Icon(Icons.shopping_cart),
-          SizedBox(width: 8.0),
-          Text('Shopping'),
-        ],
-      ),
-    ),
-    DropdownMenuItem(
-      value: 'Dining',
-      child: Row(
-        children: [
-          Icon(Icons.restaurant),
-          SizedBox(width: 8.0),
-          Text('Dining'),
-        ],
-      ),
-    ),
-    DropdownMenuItem(
-      value: 'Transportation',
-      child: Row(
-        children: [
-          Icon(Icons.directions_car),
-          SizedBox(width: 8.0),
-          Text('Transportation'),
-        ],
-      ),
-    ),
-    DropdownMenuItem(
-      value: 'Unknown',
-      child: Row(
-        children: [
-          Icon(Icons.question_mark),
-          SizedBox(width: 8.0),
-          Text('-'),
-        ],
-      ),
-    )
-  ];
+List<DropdownMenuItem<String>> availableCategories() {
+  List<Category> categories = CategoryService().fetchAll();
+  return categories
+      .map((category) => DropdownMenuItem(
+            value: category.val,
+            child: Row(
+              children: [
+                Icon(category.iconData),
+                SizedBox(width: 8.0),
+                Text(category.val),
+              ],
+            ),
+          ))
+      .toList();
 }
 
 class FormField extends StatelessWidget {

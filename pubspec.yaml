@@ -43,6 +43,7 @@ dependencies:
   fl_chart: ^0.70.0
   flutter_chat_ui: ^1.6.15
   flutter_chat_types: ^3.6.2
+  intl: ^0.20.1
 
 dev_dependencies:
   flutter_test:

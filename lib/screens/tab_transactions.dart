@@ -1,9 +1,14 @@
 import 'package:bachat/screens/tx_detail.dart';
+import 'package:bachat/services/category.dart';
+import 'package:bachat/services/llm/llm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:intl/intl.dart';
 
-import '../services/transactions/transactions.dart';
+
+import '../models/transaction.dart' as mt;
+import '../services/transaction.dart';
 
 class TransactionsTab extends StatefulWidget {
   const TransactionsTab({super.key});
@@ -13,11 +18,37 @@ class TransactionsTab extends StatefulWidget {
 }
 
 class _TransactionsTabState extends State<TransactionsTab> {
-  List<TransactionModel> _txs = [];
+  List<mt.Transaction> _txs = [];
   int firstTxLoadLimit = 100;
   final SmsQuery _query = SmsQuery();
   final String smsQuerySenderFilter = 'UOB';
   final int smsQueryLimit = 100;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        padding: const EdgeInsets.all(10.0),
+        child: CustomScrollView(
+          slivers: [
+            SearchPlaceholder(),
+            _SyncPlaceholder(
+                onPressed: () => _onSyncPressed(context), limit: smsQueryLimit),
+            _txs.isNotEmpty
+                ? _TransactionsListView(transactions: _txs)
+                : SliverToBoxAdapter(
+                    child: SizedBox(
+                      child: Center(
+                        child: Text(
+                          'No transactions found :(',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+          ],
+        ));
+  }
 
   @override
   void initState() {
@@ -33,26 +64,53 @@ class _TransactionsTabState extends State<TransactionsTab> {
   }
 
   void _onSyncPressed(BuildContext context) async {
+    if (!await _ensurePermission()) {
+      return null;
+    }
+    if (!context.mounted) {
+      return null;
+    }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text("loading messages"),
     ));
+
     List<SmsMessage> messages = await _loadMessages();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("loaded ${messages.length} messages"),
-      ));
-    }
+
     // find messages which are not yet transactions.
     int messagesToSync = 0;
-    for (SmsMessage message in messages) {
-      TransactionModel? txn =
-          await TransactionsService().findByRefID(message.id!);
+    for (SmsMessage sms in messages) {
+      mt.Transaction? txn = await TransactionsService().findByRefID(sms.id!);
       if (txn == null) {
         messagesToSync++;
+        _saveSmsToTransaction(sms);
       }
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("missing $messagesToSync transactions")));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              "loaded ${messages.length} messages, missing $messagesToSync transactions")));
+    }
+  }
+
+  Future<void> _saveSmsToTransaction(SmsMessage sms) async {
+    // first save to db
+    mt.Transaction tx = await TransactionsService().insert(mt.Transaction(
+        refId: sms.id!, refSource: "sms", raw: sms.body!, txDate: sms.date));
+    // ensure we're not passing empty string to llm
+    assert(sms.body != null && sms.body != "");
+    var llmTx = await LLMService.smsToListTransactionModel(sms.body!);
+    // modify tx object
+    tx = tx.copyWith(
+        payee: llmTx.payee,
+        amount: llmTx.amount,
+        type: llmTx.type,
+        category: llmTx.category,
+        sourceAccount: llmTx.sourceAccount,
+    );
+    await TransactionsService().update(tx);
+    setState(() {
+      _txs.add(tx);
+    });
   }
 
   Future<bool> _ensurePermission() async {
@@ -75,35 +133,6 @@ class _TransactionsTabState extends State<TransactionsTab> {
     );
     return messages;
   }
-
-  void _initMessages() async {
-    if (!await _ensurePermission()) {
-      return null;
-    }
-    await _loadMessages();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(10.0),
-      child: _txs.isNotEmpty
-          ? CustomScrollView(
-              slivers: [
-                SearchPlaceholder(),
-                _SyncPlaceholder(onPressed: () => _onSyncPressed(context)),
-                _TransactionsListView(transactions: _txs),
-              ],
-            )
-          : Center(
-              child: Text(
-                'No transactions found :(',
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-            ),
-    );
-  }
 }
 
 class SearchPlaceholder extends StatelessWidget {
@@ -125,8 +154,10 @@ class SearchPlaceholder extends StatelessWidget {
 
 class _SyncPlaceholder extends StatelessWidget {
   final VoidCallback onPressed;
+  final int limit;
 
-  const _SyncPlaceholder({super.key, required this.onPressed});
+  const _SyncPlaceholder(
+      {super.key, required this.onPressed, required this.limit});
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +166,7 @@ class _SyncPlaceholder extends StatelessWidget {
             child: ElevatedButton.icon(
                 onPressed: onPressed,
                 icon: Icon(Icons.sync),
-                label: Text("Sync last 100 messages."))));
+                label: Text("Sync last $limit messages."))));
   }
 }
 
@@ -144,9 +175,9 @@ class _TransactionsListView extends StatelessWidget {
     required this.transactions,
   });
 
-  final List<TransactionModel> transactions;
+  final List<mt.Transaction> transactions;
 
-  void openTransaction(BuildContext context, TransactionModel tx) {
+  void openTransaction(BuildContext context, mt.Transaction tx) {
     Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => TransactionFormScreen(
               tx: tx,
@@ -158,14 +189,15 @@ class _TransactionsListView extends StatelessWidget {
     return SliverList.builder(
       itemCount: transactions.length,
       itemBuilder: (BuildContext context, int i) {
-        TransactionModel tx = transactions[i];
+        mt.Transaction tx = transactions[i];
 
         return Card(
           child: ListTile(
-            leading: categoryIcon(tx.category),
+            tileColor: tx.amount == 0 ? Colors.yellow : null,
+            leading: categoryIcon(tx.category ?? ""),
             trailing: Text(tx.amount.toString()),
-            title: Text(tx.category),
-            subtitle: Text("${tx.date} @ ${tx.payee}"),
+            title: Text(tx.category ?? ""),
+            subtitle: Text("${tx.txDate?.toLocal()} @ ${tx.payee}"),
             onTap: () => openTransaction(context, tx),
             // isThreeLine: true,
           ),
@@ -176,11 +208,5 @@ class _TransactionsListView extends StatelessWidget {
 }
 
 Icon categoryIcon(String category) {
-  switch (category.toLowerCase()) {
-    case "dining":
-      return Icon(Icons.dining);
-    case "transport":
-      return Icon(Icons.directions_car);
-  }
-  return Icon(Icons.paid);
+  return Icon(CategoryService().findByVal(category).iconData);
 }

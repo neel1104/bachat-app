@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:bachat/services/transactions/transactions.dart';
 import 'package:http/http.dart' as http;
 
 import 'prompts.dart';
+import 'package:bachat/models/transaction.dart' as mt;
 
 class Message {
   final String role;
@@ -31,7 +31,7 @@ class LLMService {
     "Authorization": "Bearer $apiKey",
   };
 
-  static Future<List<TransactionModel>> smsToListTransactionModel(String sms) async {
+  static Future<mt.Transaction> smsToListTransactionModel(String sms) async {
     final body = {
       "max_tokens": 2048,
       "model": modelID,
@@ -57,10 +57,10 @@ class LLMService {
             .replaceAll("json", "")
             .replaceAll("\n", "");
 
-        final transactionsListJson = jsonDecode(cleanedJsonStr) as List<dynamic>;
+        final transactionsListJson = jsonDecode(cleanedJsonStr) as dynamic;
         return transactionsListJson
-            .map((tx) => TransactionModel.fromMap(tx as Map<String, dynamic>))
-            .toList();
+            .map((tx) => mt.Transaction.fromMap(tx as Map<String, dynamic>))
+            .toList().first;
       } else {
         throw HttpException('Request failed with status: ${response.statusCode}.', uri: Uri.parse(modelEndpoint));
       }
