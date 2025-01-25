@@ -67,7 +67,7 @@ class _HomeTabState extends State<HomeTab> {
     assert(query.contains("FROM"));
     assert(query.contains("transactions"));
 
-    var response = await TransactionsService().rawQuery(query);
+    var response = await TransactionService().rawQuery(query);
     print("response from db: $response");
     _addMessage(types.TextMessage(
       author: _llmUser,

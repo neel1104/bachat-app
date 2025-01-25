@@ -3,16 +3,16 @@ import 'package:sqflite/sqflite.dart';
 
 import 'package:bachat/models/transaction.dart' as mt;
 
-class TransactionsService {
-  static final TransactionsService _instance = TransactionsService._internal();
+class TransactionService {
+  static final TransactionService _instance = TransactionService._internal();
   static const String tableName = "transactions";
   static const String refIDColName = "ref_id";
 
   static Database? _database;
 
-  TransactionsService._internal();
+  TransactionService._internal();
 
-  factory TransactionsService() => _instance;
+  factory TransactionService() => _instance;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -86,8 +86,34 @@ class TransactionsService {
       throw Exception('Failed to insert transaction: $e');
     }
   }
+
+  Future<void> updateByID(int id, {
+    double? amount,
+    String? category,
+    String? payee,
+    String? sourceAccount
+  }) async {
+    final db = await database;
+    try {
+      Map<String, dynamic> fieldsToUpdate = {};
+      if (amount != null) fieldsToUpdate['amount'] = amount;
+      if (category != null) fieldsToUpdate['category'] = category;
+      if (payee != null) fieldsToUpdate['payee'] = payee;
+      if (sourceAccount != null) fieldsToUpdate['source_account'] = sourceAccount;
+      final rowsUpdated = await db.update(
+        tableName,
+        fieldsToUpdate,
+        where: "id = ?",
+        whereArgs: [id],
+      );
+      print("updateFields: rowsUpdated: $rowsUpdated");
+      print("fields updated: $fieldsToUpdate");
+    } catch (e) {
+      throw Exception('Failed to update transaction: $e');
+    }
+  }
   
-  Future<List<mt.Transaction>> findAll({int? limit}) async {
+  Future<List<mt.Transaction>> fetchAll({int? limit}) async {
     limit ??= 100;
     final db = await database;
     try {
@@ -110,6 +136,21 @@ class TransactionsService {
       return result.isNotEmpty ? mt.Transaction.fromMap(result.first) : null;
     } catch (e) {
       throw Exception('Failed to query transaction by refID: $e');
+    }
+  }
+
+  Future<mt.Transaction?> findByID(int id) async {
+    final db = await database;
+    try {
+      final result = await db.query(
+        tableName,
+        where: "id = ?",
+        whereArgs: [id],
+        limit: 1,
+      );
+      return result.isNotEmpty ? mt.Transaction.fromMap(result.first) : null;
+    } catch (e) {
+      throw Exception('Failed to query transaction by id: $e');
     }
   }
 

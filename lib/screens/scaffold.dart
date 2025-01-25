@@ -1,36 +1,24 @@
+import 'package:bachat/viewmodels/transaction_form_viewmodel.dart';
+import 'package:bachat/viewmodels/transaction_list_viewmodel.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
 
 import 'dashboard.dart';
-import 'tab_transactions.dart';
+import 'package:bachat/views/transaction_list_screen.dart';
 
-class AppContainer extends StatefulWidget {
-  const AppContainer({super.key});
+class AppShell extends StatefulWidget {
+  const AppShell({super.key});
 
   @override
-  State<AppContainer> createState() => _AppContainerState();
+  State<AppShell> createState() => _AppShellState();
 }
 
-class _AppContainerState extends State<AppContainer> {
+class _AppShellState extends State<AppShell> {
   int currentPageIndex = 0;
 
-  Widget getPage(int index) {
-    switch(index) {
-      case 0:
-        return Dashboard();
-      case 2:
-        return TransactionsTab();
-    }
-    return Dashboard();
-  }
-
-  Widget getTitle(int index) {
-    switch(index) {
-      case 0:
-        return Text('Finance Dashboard');
-      case 2:
-        return Text('Transactions');
-    }
-    return Text('Finance Dashboard');
+  _AppShellState(){
+    _ensurePermissions();
   }
 
   @override
@@ -63,5 +51,39 @@ class _AppContainerState extends State<AppContainer> {
         ],
       ),
     );
+  }
+
+  Widget getPage(int index) {
+    switch(index) {
+      case 0:
+        return Dashboard();
+      case 2:
+        return MultiProvider(providers: [
+          ChangeNotifierProvider(create: (_)=> TransactionFormViewModel()),
+          ChangeNotifierProvider(create: (_)=> TransactionListViewModel())
+        ],
+          child: TransactionListScreen(),);
+    }
+    return Dashboard();
+  }
+
+  Widget getTitle(int index) {
+    switch(index) {
+      case 0:
+        return Text('Finance Dashboard');
+      case 2:
+        return Text('Transactions');
+    }
+    return Text('Finance Dashboard');
+  }
+
+
+  Future<bool> _ensurePermissions() async {
+    var permission = await Permission.sms.status;
+    var havePermission = permission.isGranted;
+    if (!havePermission) {
+      await Permission.sms.request();
+    }
+    return havePermission;
   }
 }

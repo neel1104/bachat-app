@@ -1,24 +1,41 @@
+import 'package:bachat/services/transaction.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-class Dashboard extends StatelessWidget {
+import '../models/transaction.dart' as mt;
+import '../components/indicator.dart';
+import '../components/progress_bar.dart';
+import '../components/section_title.dart';
+
+class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
+
+  @override
+  State<Dashboard> createState() => DashboardState();
+}
+
+class DashboardState extends State<Dashboard> {
+  List<mt.Transaction> _txs = [];
+
+  DashboardState() {
+    _initTransactionsState();
+  }
+
+  Future<void> _initTransactionsState() async {
+    List<mt.Transaction> transactions =
+        await TransactionService().fetchAll(limit: 100);
+    setState(() {
+      _txs = transactions;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10,0,10,10),
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // TextField(
-          //   decoration: InputDecoration(
-          //     hintText: 'Search transactions...',
-          //     prefixIcon: Icon(Icons.search),
-          //     border: OutlineInputBorder(
-          //       borderRadius: BorderRadius.circular(8.0),
-          //     ),
-          //   ),
-          // ),
           SizedBox(height: 16.0),
           TabBarSection(),
           SizedBox(height: 16.0),
@@ -26,7 +43,8 @@ class Dashboard extends StatelessWidget {
             child: ListView(
               children: [
                 SectionTitle(title: 'Monthly Spending vs. Budget'),
-                Placeholder(fallbackHeight: 150),
+                SizedBox(height: 16.0),
+                CategorySpendPieChart(transactions: _txs),
                 SizedBox(height: 16.0),
                 SectionTitle(title: 'Goal Progress'),
                 ProgressBar(title: 'Emergency Fund', current: 300, total: 500),
@@ -94,44 +112,84 @@ class TabBarSection extends StatelessWidget {
   }
 }
 
-class SectionTitle extends StatelessWidget {
-  final String title;
 
-  const SectionTitle({super.key, required this.title});
+class CategorySpendPieChart extends StatelessWidget {
+  final List<mt.Transaction> transactions;
+
+  const CategorySpendPieChart({super.key, required this.transactions});
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
+    final categorySpends = _getCategorySpends(transactions);
+
+    return Row(children: [
+      const SizedBox(
+        height: 18,
       ),
-    );
-  }
-}
-
-class ProgressBar extends StatelessWidget {
-  final String title;
-  final int current;
-  final int total;
-
-  const ProgressBar({super.key, required this.title, required this.current, required this.total});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title),
-        SizedBox(height: 4.0),
-        LinearProgressIndicator(
-          value: current / total,
-          backgroundColor: Colors.grey[300],
-          color: Colors.blue,
+      Expanded(
+          child: AspectRatio(
+        aspectRatio: 1.5,
+        child: PieChart(
+          PieChartData(
+            sections: categorySpends.entries.map((entry) {
+              final color = _getCategoryColor(entry.key);
+              return PieChartSectionData(
+                value: entry.value,
+                title: "${entry.key}\n${entry.value.toStringAsFixed(2)}",
+                color: color,
+                radius: 50,
+                // titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              );
+            }).toList(),
+            sectionsSpace: 2,
+            centerSpaceRadius: 40,
+            borderData: FlBorderData(show: false),
+          ),
         ),
-        SizedBox(height: 8.0),
-      ],
-    );
+      )),
+      Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _getLegend(categorySpends)),
+      const SizedBox(
+        width: 28,
+      ),
+    ]);
+  }
+
+  List<Widget> _getLegend(Map<String, double> categorySpends) {
+    return categorySpends.entries.map((entry) {
+      final color = _getCategoryColor(entry.key);
+      return Indicator(color: color, text: entry.key, isSquare: true);
+    }).toList();
+  }
+
+  Color _getCategoryColor(String category) {
+    // Shades of blue palette
+    const bluishPalette = [
+      Color(0xFF1565C0), // Blue 800
+      Color(0xFF1976D2), // Blue 700
+      Color(0xFF1E88E5), // Blue 600
+      Color(0xFF42A5F5), // Blue 400
+      Color(0xFF64B5F6), // Blue 300
+      Color(0xFF90CAF9), // Blue 200
+      Color(0xFFBBDEFB), // Blue 100
+      Color(0xFFE3F2FD), // Blue 50
+    ];
+    final index = category.hashCode % bluishPalette.length;
+    return bluishPalette[index];
+  }
+
+  Map<String, double> _getCategorySpends(List<mt.Transaction> transactions) {
+    final Map<String, double> categorySpends = {};
+
+    for (var tx in transactions) {
+      final category = tx.category ?? "Uncategorized";
+      categorySpends[category] = (categorySpends[category] ?? 0) + tx.amount!;
+      if (tx.txDate!.isBefore(DateTime.now().subtract(Duration(days: 7)))) {
+        break;
+      }
+    }
+    return categorySpends;
   }
 }

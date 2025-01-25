@@ -32,6 +32,7 @@ class LLMService {
   };
 
   static Future<mt.Transaction> smsToListTransactionModel(String sms) async {
+    print("smsToListTransactionModel: called with sms:\n$sms");
     final body = {
       "max_tokens": 2048,
       "model": modelID,
@@ -58,6 +59,7 @@ class LLMService {
             .replaceAll("\n", "");
 
         final transactionsListJson = jsonDecode(cleanedJsonStr) as dynamic;
+        print("smsToListTransactionModel: transactionsListJson:\n$transactionsListJson");
         return transactionsListJson
             .map((tx) => mt.Transaction.fromMap(tx as Map<String, dynamic>))
             .toList().first;

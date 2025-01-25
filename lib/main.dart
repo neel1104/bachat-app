@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'screens/scaffold.dart';
-
 
 void main() {
   runApp(const BachatApp());
@@ -18,10 +18,7 @@ class BachatApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: AppContainer(),
+      home: AppShell(),
     );
   }
 }
-
-
-
