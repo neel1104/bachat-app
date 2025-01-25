@@ -1,4 +1,6 @@
+import 'package:bachat/viewmodels/transaction_list_viewmodel.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class SyncPlaceholder extends StatelessWidget {
   final VoidCallback onPressed;
@@ -9,11 +11,30 @@ class SyncPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lvm = context.watch<TransactionListViewModel>();
     return SliverToBoxAdapter(
         child: SizedBox(
-            child: ElevatedButton.icon(
-                onPressed: onPressed,
-                icon: Icon(Icons.sync),
-                label: Text("Sync last $limit messages."))));
+            child: Column(
+      children: [
+        ElevatedButton.icon(
+            onPressed: !lvm.isSyncing ? () => _handleSync(context, lvm) : null,
+            icon: Icon(Icons.sync),
+            label: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [Text("Sync last $limit messages.")],
+            )),
+        Visibility(
+          visible: lvm.isSyncing,
+          child: LinearProgressIndicator(),
+        ),
+      ],
+    )));
+  }
+
+  void _handleSync(BuildContext context, TransactionListViewModel lvm) async {
+    int count = await lvm.syncTransactions();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text("synced $count transaction(s)!")));
   }
 }

@@ -81,8 +81,10 @@ class TransactionListViewModel extends ChangeNotifier {
   }
 
   // sync helpers start
-  void syncTransactions() async {
+  Future<int> syncTransactions() async {
     _isSyncing = true;
+    notifyListeners();
+
     List<SmsMessage> messages = await _fetchDeviceMessages();
 
     // find messages which are not yet transactions.
@@ -97,6 +99,8 @@ class TransactionListViewModel extends ChangeNotifier {
     }
     await Future.wait(futures);
     _isSyncing = false;
+    notifyListeners();
+    return messagesToSync;
   }
 
   Future<Transaction> _guessFieldsFromRawTx(Transaction tx) async {
