@@ -58,13 +58,13 @@ Question: "What is my total spending this month?"
 Response:
 SELECT SUM(amount) AS total_spent
 FROM transactions
-WHERE date >= DATE('now', 'start of month') AND date <= DATE('now', 'localtime');
+WHERE tx_date >= DATE('now', 'start of month') AND date <= DATE('now', 'localtime');
 
 Question: "Which category did I spend the most on last year?"
 Response:
 SELECT category, SUM(amount) AS total_spent
 FROM transactions
-WHERE date >= DATE('now', '-1 year') AND date < DATE('now')
+WHERE tx_date >= DATE('now', '-1 year') AND date < DATE('now')
 GROUP BY category
 ORDER BY total_spent DESC
 LIMIT 1;

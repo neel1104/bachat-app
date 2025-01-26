@@ -163,4 +163,30 @@ class TransactionService {
       throw Exception('Failed to execute raw query: $e');
     }
   }
+
+  Future<Map<String, double>> topSpendsByCategory(DateTime endDate, Duration duration) async {
+    final db = await database;
+
+    // Calculate the start date
+    final startDate = endDate.subtract(duration);
+
+    try {
+      final result = await db.query(
+        tableName,
+        columns: ["SUM(amount) as spends", "category"],
+        where: "tx_date BETWEEN ? AND ?",
+        whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
+        groupBy: "category",
+        orderBy: "spends DESC", // Sort by spends in descending order
+        limit: 10,
+      );
+
+      // Convert the result to Map<String, double>
+      return {
+        for (var row in result) row['category'] as String: (row['spends'] as num).toDouble()
+      };
+    } catch (e) {
+      throw Exception('Failed to execute top spends by category: $e');
+    }
+  }
 }
