@@ -28,7 +28,7 @@ class DashboardScreen extends StatelessWidget {
               .toList(),
         )),
         ElevatedButton.icon(
-          onPressed: () => _startChat(context),
+          onPressed: () => _startChat(context, fvm),
           icon: Icon(Icons.rocket_launch),
           label: Text("Start chat with AI"),
         ),
@@ -37,13 +37,14 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  void _startChat(BuildContext context) {
+  void _startChat(BuildContext context, FavouriteViewModel fvm) {
     Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => MultiProvider(providers: [
         ChangeNotifierProvider(create: (_) => AIChatViewmodel()),
         ChangeNotifierProvider(create: (_) => FavouriteViewModel())
       ], child: AIChatScreen()),
     ));
+    fvm.refresh();
   }
 }
 
@@ -56,8 +57,9 @@ class FavouriteListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     FavouriteViewModel fvm = context.watch<FavouriteViewModel>();
     String? jsonString = fvm.queryResult(favourite);
-    if (jsonString == null)
-      return Center(child: Text("query result not found"));
+    if (jsonString == null) {
+      return const Center(child: Text('No data available.'));
+    }
     // Decode JSON string into a List of Maps
     List<dynamic> jsonList = json.decode(jsonString);
 
@@ -108,10 +110,28 @@ class FavouriteListItem extends StatelessWidget {
     ];
 
     return Card(
-        child: Table(
-      // border: TableBorder.all(),
-      children: tableRows,
+        child: Column(
+      children: [
+        Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Text(favourite.title.isNotEmpty ? favourite.title : "a very long title hi hi hahahahaha", softWrap: true,)),
+            IconButton(
+              onPressed: () => {_handleRemoveFavourite(context, fvm)},
+              icon: Icon(Icons.favorite),
+            )
+          ],
+        ),
+        Table(
+          // border: TableBorder.all(),
+          children: tableRows,
+        )
+      ],
     ));
+  }
+  void _handleRemoveFavourite(BuildContext context, FavouriteViewModel fvm)async{
+    fvm.removeFavourite(favourite.id!).then((_) => fvm.refresh());
   }
 }
 

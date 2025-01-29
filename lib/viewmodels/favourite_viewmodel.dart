@@ -15,6 +15,10 @@ class FavouriteViewModel extends ChangeNotifier {
     _favouriteService.initializeDatabase().then((_) => _loadFavourites());
   }
 
+  void refresh() {
+    _favouriteService.initializeDatabase().then((_) => _loadFavourites());
+  }
+
   @override
   Future<void> dispose() async {
     super.dispose();
