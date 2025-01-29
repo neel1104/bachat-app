@@ -46,64 +46,34 @@ class LLMService {
 
   static Future<Transaction> smsToListTransactionModel(String sms) async {
     print("smsToListTransactionModel: called with sms:\n$sms");
-    final body = {
-      "max_tokens": 2048,
-      "model": modelID,
-      "temperature": 0.5,
-      "top_p": 0.7,
-      "messages": [
-        Message.system(smsToJSONSystemPrompt).toMap(),
-        Message.human(sms).toMap(),
-      ]
-    };
+    List<Message> messages = [Message.system(smsToJSONSystemPrompt), Message.human(sms)];
+    Message aiMsg = await _postRequest(messages);
+    print("aiMsg.content ${aiMsg.content}");
 
-    try {
-      final response = await _postRequest(body);
-
-      if (response.statusCode == 200) {
-        final assistantResponse =
-            jsonDecode(response.body)['choices']?[0]?['message']?['content'];
-        if (assistantResponse == null) {
-          throw FormatException(
-              "Assistant response missing in the API response");
-        }
-
-        final cleanedJsonStr = assistantResponse
-            .replaceAll("`", "")
-            .replaceAll("json", "")
-            .replaceAll("\n", "");
-
-        final transactionsListJson = jsonDecode(cleanedJsonStr) as dynamic;
-        print(
-            "smsToListTransactionModel: transactionsListJson:\n$transactionsListJson");
-        return transactionsListJson
-            .map((tx) => Transaction.fromMap(tx as Map<String, dynamic>))
-            .toList()
-            .first;
-      } else {
-        throw HttpException(
-            'Request failed with status: ${response.statusCode}.',
-            uri: Uri.parse(modelEndpoint));
-      }
-    } catch (error) {
-      print("Error in smsToListTransactionModel: $error");
-      rethrow;
-    }
+    final transactionsMap = jsonDecode(aiMsg.content) as Map<String, dynamic>;
+    return Transaction.fromMap(transactionsMap);
   }
 
   static Future<Message> chat(List<Message> messages) async {
     messages.insert(0, Message.system(userQuerySystemPrompt));
+    return _postRequest(messages);
+  }
 
-    final body = {
-      "max_tokens": 2048,
-      "model": modelID,
-      "temperature": 0.5,
-      "top_p": 0.7,
-      "messages": messages.map((msg) => msg.toMap()).toList(),
-    };
-
+  static Future<Message> _postRequest(List<Message> messages) async {
     try {
-      final response = await _postRequest(body);
+      final body = {
+        "max_tokens": 2048,
+        "model": modelID,
+        "temperature": 0.5,
+        "top_p": 0.7,
+        "messages": messages.map((msg) => msg.toMap()).toList(),
+      };
+
+      http.Response response = await http.post(
+        Uri.parse(modelEndpoint),
+        headers: headers,
+        body: jsonEncode(body),
+      );
 
       if (response.statusCode == 200) {
         final choices = jsonDecode(response.body)['choices'] as List<dynamic>;
@@ -118,16 +88,8 @@ class LLMService {
             uri: Uri.parse(modelEndpoint));
       }
     } catch (error) {
-      print("Error in chat: $error");
+      print("Error calling LLM with Chat API: $error");
       rethrow;
     }
-  }
-
-  static Future<http.Response> _postRequest(Map<String, dynamic> body) async {
-    return await http.post(
-      Uri.parse(modelEndpoint),
-      headers: headers,
-      body: jsonEncode(body),
-    );
   }
 }
