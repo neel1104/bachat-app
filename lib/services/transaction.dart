@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:bachat/models/transaction.dart' as mt;
@@ -158,7 +159,7 @@ class TransactionService {
     final db = await database;
     try {
       final result = await db.rawQuery(rawQuery);
-      return result.toString();
+      return jsonEncode(result);
     } catch (e) {
       throw Exception('Failed to execute raw query: $e');
     }

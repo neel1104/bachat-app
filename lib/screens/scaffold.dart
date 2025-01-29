@@ -1,4 +1,5 @@
 import 'package:bachat/viewmodels/ai_chat_viewmodel.dart';
+import 'package:bachat/viewmodels/favourite_viewmodel.dart';
 import 'package:bachat/viewmodels/transaction_form_viewmodel.dart';
 import 'package:bachat/viewmodels/transaction_list_viewmodel.dart';
 import 'package:bachat/views/transaction_list_screen.dart';
@@ -81,7 +82,17 @@ class _AppShellState extends State<AppShell> {
           child: TransactionListScreen(),
         );
     }
-    return DashboardScreen();
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => FavouriteViewModel(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AIChatViewmodel(),
+        )
+      ],
+      child: DashboardScreen(),
+    );
   }
 
   Widget getTitle(int index) {

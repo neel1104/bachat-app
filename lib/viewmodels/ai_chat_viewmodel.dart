@@ -1,6 +1,7 @@
-import 'package:bachat/services/llm/llm.dart';
-import 'package:bachat/services/transaction.dart';
 import 'package:flutter/foundation.dart';
+
+import '../services/llm/llm.dart';
+import '../services/transaction.dart';
 
 class AIChatViewmodel extends ChangeNotifier {
   List<Message> messages = [];

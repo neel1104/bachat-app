@@ -130,7 +130,7 @@ class AIMessageListItem extends StatelessWidget {
                     msg.content,
                     style: TextStyle(color: Colors.black, fontSize: 10),
                   ),
-                  ElevatedButton.icon(onPressed: ()=>_handleAddToFavourites(fvm, context), icon: Icon(Icons.favorite), label: Text("Add to favourites"))
+                  ElevatedButton.icon(onPressed: ()=>_handleAddToFavourites(fvm, context), icon: Icon(Icons.favorite), label: Text("Add to dashboard"))
                 ],
               )
             : Text(
