@@ -7,15 +7,21 @@ import '../services/llm/llm.dart';
 import '../services/transaction.dart';
 
 class TransactionListViewModel extends ChangeNotifier {
-  List<Transaction> _transactions = [];
+  // sms loading config
+  String smsQuerySenderFilter = 'UOB';
+  int smsQueryLimit = 100;
+  // transaction load config
+  int firstTxLoadLimit = 100;
+
+  // loading indicators
   bool _isLoading = false;
   bool _isSyncing = false;
-  int isRefreshedTransaction = 0;
-  int firstTxLoadLimit = 100;
-  final SmsQuery _query = SmsQuery();
-  final String smsQuerySenderFilter = 'UOB';
-  final int smsQueryLimit = 100;
 
+  // hold state
+  List<Transaction> _transactions = [];
+  int isRefreshedTransaction = 0;
+
+  // getters
   List<Transaction> get transactions => _transactions;
 
   bool get isLoading => _isLoading;
@@ -23,7 +29,7 @@ class TransactionListViewModel extends ChangeNotifier {
   bool get isSyncing => _isSyncing;
 
   TransactionListViewModel() {
-    fetchTransactions();
+    fetchTransactions().then((_)=> syncTransactions());
   }
 
   Future<void> fetchTransactions() async {
@@ -130,7 +136,7 @@ class TransactionListViewModel extends ChangeNotifier {
   }
 
   Future<List<SmsMessage>> _fetchDeviceMessages() async {
-    final messages = await _query.querySms(
+    final messages = await SmsQuery().querySms(
       kinds: [
         SmsQueryKind.inbox,
       ],
