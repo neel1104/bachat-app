@@ -21,11 +21,23 @@ class DashboardScreen extends StatelessWidget {
               visible: fvm.isLoading, child: CircularProgressIndicator()),
         ),
         Expanded(
-            child: ListView(
-          children: fvm.favourites
-              .map((fav) => FavouriteListItem(favourite: fav))
-              .toList(),
-        )),
+            child: fvm.favourites.isEmpty
+                ? Center( // handling empty state
+                    child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.info),
+                      Text(
+                        "Head over to the AI chat to add widgets here!",
+                        softWrap: true,
+                      )
+                    ],
+                  ))
+                : ListView(
+                    children: fvm.favourites
+                        .map((fav) => FavouriteListItem(favourite: fav))
+                        .toList(),
+                  )),
         ElevatedButton.icon(
           onPressed: () => _startChat(context, fvm),
           icon: Icon(Icons.rocket_launch),
