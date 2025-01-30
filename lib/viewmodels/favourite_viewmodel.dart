@@ -1,9 +1,8 @@
-import 'dart:convert';
-
-import 'package:bachat/services/transaction.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/favourite.dart';
+import '../services/llm/llm.dart';
+import '../services/transaction.dart';
 
 class FavouriteViewModel extends ChangeNotifier {
   final FavouriteDatabase _favouriteService = FavouriteDatabase();
@@ -26,24 +25,33 @@ class FavouriteViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadFavourites() async {
-    isLoading = true; notifyListeners();
+    isLoading = true;
+    notifyListeners();
 
     favourites = await _favouriteService.loadFavourites();
     List<Future> fs = [];
-    for(Favourite fav in favourites){
+    for (Favourite fav in favourites) {
       fs.add(_buildQueryCache(fav));
     }
     await Future.wait(fs);
-    isLoading = false; notifyListeners();
+    isLoading = false;
+    notifyListeners();
   }
 
   String? queryResult(Favourite fav) {
     return _queryCache[fav.hashKey];
   }
 
-  Future<void> addFavourite(String title, String sql) async {
-    await _favouriteService.addFavourite(
-        Favourite(title: title, sql: sql, hashKey: _buildHashKey(sql)));
+  Future<void> addFavourite(String sql) async {
+    isLoading = true;
+    notifyListeners();
+    Favourite favourite = await _favouriteService
+        .addFavourite(Favourite(sql: sql, hashKey: _buildHashKey(sql)));
+    Favourite llmFav = await LLMService.prepareFavourite(sql);
+    await _favouriteService.updateFavourite(favourite.id!,
+        title: llmFav.title, visualisationType: llmFav.visualisationType);
+    isLoading = false;
+    notifyListeners();
   }
 
   Future<void> removeFavourite(int id) async {

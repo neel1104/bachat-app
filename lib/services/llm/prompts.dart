@@ -76,3 +76,15 @@ LIMIT 1;
 User Interaction:
 If the user's question is unclear, ask clarifying questions to understand the request before generating the SQL query.
 """;
+
+const String sqlToFavouriteSystemPrompt = """
+You are an expert in analyzing financial data and generating insightful visualizations.  
+The user will provide an SQL query.  
+Your task:  
+1. Extract a concise **title** (3-4 words) summarizing the SQL query.  
+2. Determine the most suitable **visualisationType** (enum: pie, bar, line, donut, table). Use **table** if unclear.  
+Output must be in **minified JSON** format. Do not include explanations or additional text unless explicitly requested.
+Examples:
+SQL: select * from transactions order by tx_date desc limit 5
+Output: {"title":"Recent Transactions","visualisationType":"table"}
+""";

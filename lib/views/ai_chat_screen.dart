@@ -1,9 +1,9 @@
-import 'package:bachat/services/llm/llm.dart';
-import 'package:bachat/viewmodels/favourite_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../services/llm/llm.dart';
 import '../viewmodels/ai_chat_viewmodel.dart';
+import '../viewmodels/favourite_viewmodel.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -17,7 +17,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    AIChatViewmodel viewModel = context.watch<AIChatViewmodel>();
+    AIChatViewmodel cvm = context.watch<AIChatViewmodel>();
+    FavouriteViewModel fvm = context.watch<FavouriteViewModel>();
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -35,19 +36,19 @@ class _AIChatScreenState extends State<AIChatScreen> {
       body: Column(
         children: [
           Visibility(
-            visible: viewModel.isLoading,
+            visible: cvm.isLoading || fvm.isLoading,
             child: LinearProgressIndicator(),
           ),
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.all(10),
-              itemCount: viewModel.messages.length,
+              itemCount: cvm.messages.length,
               itemBuilder: (context, index) {
-                bool isUserMessage = viewModel.messages[index].isUserMessage;
+                bool isUserMessage = cvm.messages[index].isUserMessage;
                 if (isUserMessage)
-                  return UserMessageListItem(msg: viewModel.messages[index]);
+                  return UserMessageListItem(msg: cvm.messages[index]);
                 return AIMessageListItem(
-                  msg: viewModel.messages[index],
+                  msg: cvm.messages[index],
                 );
               },
             ),
@@ -58,6 +59,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
               children: [
                 Expanded(
                   child: TextField(
+                    enabled: !(cvm.isLoading || fvm.isLoading),
                     controller: _messageController,
                     decoration: InputDecoration(
                       hintText: 'Type your message...',
@@ -79,7 +81,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                     icon: Icon(Icons.send, color: Colors.white),
                     onPressed: () {
                       if (_messageController.text.trim().isNotEmpty) {
-                        viewModel.sendMessage(_messageController.text.trim());
+                        cvm.sendMessage(_messageController.text.trim());
                         _messageController.clear();
                       }
                     },
@@ -130,7 +132,10 @@ class AIMessageListItem extends StatelessWidget {
                     msg.content,
                     style: TextStyle(color: Colors.black, fontSize: 10),
                   ),
-                  ElevatedButton.icon(onPressed: ()=>_handleAddToFavourites(fvm, context), icon: Icon(Icons.favorite), label: Text("Add to dashboard"))
+                  ElevatedButton.icon(
+                      onPressed: () => _handleAddToFavourites(fvm, context),
+                      icon: Icon(Icons.favorite),
+                      label: Text("Add to dashboard"))
                 ],
               )
             : Text(
@@ -143,13 +148,17 @@ class AIMessageListItem extends StatelessWidget {
     );
   }
 
-  void _handleAddToFavourites(FavouriteViewModel fvm, BuildContext context) async {
+  void _handleAddToFavourites(
+      FavouriteViewModel fvm, BuildContext context) async {
     try {
-      await fvm.addFavourite("", msg.content);
-      if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Added to favourites.")));
-    }
-    catch (e) {
-      if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("failed to add to favourites.")));
+      await fvm.addFavourite(msg.content);
+      if (context.mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Added to favourites.")));
+    } catch (e) {
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("failed to add to favourites.")));
     }
   }
 }

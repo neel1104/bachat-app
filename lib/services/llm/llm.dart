@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bachat/models/favourite.dart';
 import 'package:http/http.dart' as http;
 
 import '../../models/transaction.dart';
@@ -57,6 +58,13 @@ class LLMService {
   static Future<Message> chat(List<Message> messages) async {
     messages.insert(0, Message.system(userQuerySystemPrompt));
     return _postRequest(messages);
+  }
+
+  static Future<Favourite> prepareFavourite(String sql) async {
+    List<Message> messages = [Message.system(sqlToFavouriteSystemPrompt), Message.human(sql)];
+    Message aiMsg = await _postRequest(messages);
+    final favouriteMap = jsonDecode(aiMsg.content) as Map<String, dynamic>;
+    return Favourite.fromMap(favouriteMap);
   }
 
   static Future<Message> _postRequest(List<Message> messages) async {

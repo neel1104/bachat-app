@@ -1,10 +1,9 @@
-import 'dart:convert';
-
-import 'package:bachat/models/favourite.dart';
-import 'package:bachat/viewmodels/ai_chat_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../components/visualisations.dart';
+import '../models/favourite.dart';
+import '../viewmodels/ai_chat_viewmodel.dart';
 import '../viewmodels/favourite_viewmodel.dart';
 import 'ai_chat_screen.dart';
 
@@ -60,86 +59,34 @@ class FavouriteListItem extends StatelessWidget {
     if (jsonString == null) {
       return const Center(child: Text('No data available.'));
     }
-    // Decode JSON string into a List of Maps
-    List<dynamic> jsonList = json.decode(jsonString);
-
-    if (jsonList.isEmpty) {
-      return const Center(child: Text('No data available.'));
-    }
-
-    // Get all unique keys from the JSON objects
-    Set<String> keys = {};
-    for (var item in jsonList) {
-      keys.addAll(item.keys);
-    }
-
-    // Convert the Set of keys to a List for consistent ordering
-    List<String> headers = keys.toList();
-
-    // Build the Table rows
-    List<TableRow> tableRows = [
-      // Header row
-      TableRow(
-        children: headers.map((key) {
-          return Container(
-            color: Colors.blueGrey,
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              capitalizeHeader(key),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-      // Data rows
-      ...jsonList.map((item) {
-        return TableRow(
-          children: headers.map((key) {
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                item[key]?.toString() ?? '-', // Handle missing keys gracefully
-              ),
-            );
-          }).toList(),
-        );
-      }).toList()
-    ];
 
     return Card(
         child: Column(
       children: [
         Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(child: Text(favourite.title.isNotEmpty ? favourite.title : "a very long title hi hi hahahahaha", softWrap: true,)),
+            Expanded(
+                child: Text(
+              favourite.title.isNotEmpty ? favourite.title : "",
+              softWrap: true,
+            )),
             IconButton(
               onPressed: () => {_handleRemoveFavourite(context, fvm)},
               icon: Icon(Icons.favorite),
             )
           ],
         ),
-        Table(
-          // border: TableBorder.all(),
-          children: tableRows,
+        JSONTable(
+          jsonString: jsonString,
         )
       ],
     ));
   }
-  void _handleRemoveFavourite(BuildContext context, FavouriteViewModel fvm)async{
+
+  void _handleRemoveFavourite(
+      BuildContext context, FavouriteViewModel fvm) async {
     fvm.removeFavourite(favourite.id!).then((_) => fvm.refresh());
   }
-}
-
-String capitalizeHeader(String header) {
-  return header
-      .replaceAll('_', ' ') // Replace underscores with spaces
-      .split(' ') // Split into words
-      .map((word) =>
-          word[0].toUpperCase() + word.substring(1)) // Capitalize each word
-      .join(' '); // Join words back together
 }

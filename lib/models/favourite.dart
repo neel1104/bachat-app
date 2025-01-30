@@ -8,10 +8,11 @@ class Favourite {
   final String sql;
   final int priority;
   final String hashKey;
+  final String visualisationType;
 
   bool get isGroupBy => sql.contains("GROUP BY");
 
-  Favourite({this.id, required this.title, required this.sql, this.priority = 0, required this.hashKey});
+  Favourite({this.id, this.title = "", required this.sql, this.priority = 0, required this.hashKey, this.visualisationType = "table"});
 
   // Convert a Favourite object to a map
   Map<String, dynamic> toMap() {
@@ -21,6 +22,7 @@ class Favourite {
       'sql': sql,
       'priority': priority,
       'hashKey': hashKey,
+      'visualisationType': visualisationType
     };
   }
 
@@ -34,6 +36,24 @@ class Favourite {
       hashKey: map['hashKey'],
     );
   }
+
+  Favourite copyWith({
+    int? id,
+    String? title,
+    String? sql,
+    int? priority,
+    String? hashKey,
+    String? visualisationType,
+  }) {
+    return Favourite(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      sql: sql ?? this.sql,
+      priority: priority ?? this.priority,
+      hashKey: hashKey ?? this.hashKey,
+      visualisationType: visualisationType ?? this.visualisationType,
+    );
+  }
 }
 
 // Database-related operations
@@ -45,7 +65,7 @@ class FavouriteDatabase {
       join(await getDatabasesPath(), 'favourites.db'),
       onCreate: (db, version) {
         return db.execute(
-          'CREATE TABLE favourite(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, sql TEXT, priority INTEGER, hashKey TEXT)',
+          'CREATE TABLE favourite(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, sql TEXT, priority INTEGER, hashKey TEXT, visualisationType TEXT)',
         );
       },
       onUpgrade: (db, oldVersion, newVersion) {
@@ -53,10 +73,10 @@ class FavouriteDatabase {
           'DROP TABLE IF EXISTS favourite',
         );
         db.execute(
-          'CREATE TABLE favourite(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, sql TEXT, priority INTEGER, hashKey TEXT)',
+          'CREATE TABLE favourite(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, sql TEXT, priority INTEGER, hashKey TEXT, visualisationType TEXT)',
         );
       },
-      version: 2,
+      version: 3,
     );
   }
 
@@ -65,11 +85,29 @@ class FavouriteDatabase {
     return List.generate(maps.length, (i) => Favourite.fromMap(maps[i]));
   }
 
-  Future<void> addFavourite(Favourite favourite) async {
-    await database.insert(
+  Future<Favourite> addFavourite(Favourite favourite) async {
+    int insertedID = await database.insert(
       'favourite',
       favourite.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    return favourite.copyWith(id: insertedID);
+  }
+
+  Future<void> updateFavourite(int id, {String? title, String? visualisationType}) async {
+    // Create a map with only the fields that need to be updated
+    Map<String, dynamic> updatedValues = {};
+    if (title != null) updatedValues['title'] = title;
+    if (visualisationType != null) updatedValues['visualisationType'] = visualisationType;
+
+    // If there are no fields to update, return early
+    if (updatedValues.isEmpty) return;
+
+    await database.update(
+      'favourites', // Table name
+      updatedValues, // Values to update
+      where: 'id = ?', // Condition
+      whereArgs: [id], // Arguments for condition
     );
   }
 
