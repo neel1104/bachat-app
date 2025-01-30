@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 
-import 'screens/scaffold.dart';
+import 'views/_main_layout.dart';
 
 void main() {
-  runApp(const BachatApp());
+  runApp(const App());
 }
 
-class BachatApp extends StatelessWidget {
-  const BachatApp({super.key});
+class App extends StatelessWidget {
+  const App({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Finance Dashboard',
+      title: 'Bachat',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: AppShell(),
+      home: MainLayout(),
     );
   }
 }

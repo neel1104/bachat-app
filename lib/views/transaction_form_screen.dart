@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/transaction.dart';
-import '../screens/transaction_form.dart';
+import '../components/transaction_form.dart';
 import '../viewmodels/transaction_form_viewmodel.dart';
 import '../viewmodels/transaction_list_viewmodel.dart';
 

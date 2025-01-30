@@ -1,25 +1,25 @@
-import 'package:bachat/viewmodels/ai_chat_viewmodel.dart';
-import 'package:bachat/viewmodels/favourite_viewmodel.dart';
-import 'package:bachat/viewmodels/transaction_form_viewmodel.dart';
-import 'package:bachat/viewmodels/transaction_list_viewmodel.dart';
-import 'package:bachat/views/transaction_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
-import '../views/dashboard_screen.dart';
+import '../viewmodels/ai_chat_viewmodel.dart';
+import '../viewmodels/favourite_viewmodel.dart';
+import '../viewmodels/transaction_form_viewmodel.dart';
+import '../viewmodels/transaction_list_viewmodel.dart';
+import 'dashboard_screen.dart';
+import 'transaction_list_screen.dart';
 
-class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+class MainLayout extends StatefulWidget {
+  const MainLayout({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
+  State<MainLayout> createState() => _MainLayoutState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _MainLayoutState extends State<MainLayout> {
   int currentPageIndex = 0;
 
-  _AppShellState() {
+  _MainLayoutState() {
     _ensurePermissions();
   }
 
@@ -84,12 +84,8 @@ class _AppShellState extends State<AppShell> {
     }
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-          create: (_) => FavouriteViewModel(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => AIChatViewmodel(),
-        )
+        ChangeNotifierProvider(create: (_) => FavouriteViewModel()),
+        ChangeNotifierProvider(create: (_) => AIChatViewmodel())
       ],
       child: DashboardScreen(),
     );
@@ -97,12 +93,10 @@ class _AppShellState extends State<AppShell> {
 
   Widget getTitle(int index) {
     switch (index) {
-      case 0:
-        return Text('Finance Dashboard');
       case 2:
         return Text('Transactions');
     }
-    return Text('Finance Dashboard');
+    return Text('Dashboard');
   }
 
   Future<bool> _ensurePermissions() async {
