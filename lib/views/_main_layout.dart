@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
+import '../models/transaction.dart';
 import '../viewmodels/ai_chat_viewmodel.dart';
 import '../viewmodels/favourite_viewmodel.dart';
 import '../viewmodels/transaction_form_viewmodel.dart';
 import '../viewmodels/transaction_list_viewmodel.dart';
+import '../views/transaction_form_screen.dart';
 import 'dashboard_screen.dart';
 import 'transaction_list_screen.dart';
 
@@ -27,40 +29,29 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: getTitle(currentPageIndex),
+        title: getTitle(),
         actions: [
-          IconButton(
-            icon: Icon(Icons.check),
-            onPressed: () {},
-          ),
+          IconButton(icon: Icon(Icons.more_vert), onPressed: () {}),
         ],
       ),
-      body: getPage(currentPageIndex),
+      body: getPage(),
+      floatingActionButton: FloatingActionButton(
+          shape: CircleBorder(),
+          onPressed: () => {_handleFabPressed(context)},
+          child: Icon(Icons.add)),
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentPageIndex,
-        onDestinationSelected: (int index) => {
-          setState(() {
-            currentPageIndex = index;
-          })
-        },
+        onDestinationSelected: _handleBottomNavChange,
         // indicatorColor: Colors.amber,
         destinations: [
+          NavigationDestination(icon: Icon(Icons.home_outlined), label: 'Home'),
           NavigationDestination(
-              icon: Icon(
-                Icons.home_outlined,
-              ),
-              label: 'Home'),
-          NavigationDestination(
-              icon: Icon(
-                Icons.pie_chart_outline_outlined,
-              ),
-              label: 'Budgets'),
+              icon: Icon(Icons.pie_chart_outline_outlined), label: 'Budgets'),
           NavigationDestination(
               icon: Icon(
                 Icons.receipt_long_outlined,
               ),
               label: 'Transactions'),
-          // NavigationDestination(icon: Icon(Icons.flag_outlined, ), label: 'Goals'),
           NavigationDestination(
               icon: Icon(
                 Icons.settings_outlined,
@@ -71,8 +62,24 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  Widget getPage(int index) {
-    switch (index) {
+  void _handleFabPressed(BuildContext context) {
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => TransactionFormScreen(
+            tx: Transaction(
+                txDate: DateTime.now(),
+                refId: 0,
+                refSource: "manual",
+                raw: ""))));
+  }
+
+  void _handleBottomNavChange(int index) {
+    setState(() {
+      currentPageIndex = index;
+    });
+  }
+
+  Widget getPage() {
+    switch (currentPageIndex) {
       case 2:
         return MultiProvider(
           providers: [
@@ -91,8 +98,8 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  Widget getTitle(int index) {
-    switch (index) {
+  Widget getTitle() {
+    switch (currentPageIndex) {
       case 2:
         return Text('Transactions');
     }

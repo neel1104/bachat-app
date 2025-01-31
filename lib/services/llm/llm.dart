@@ -83,6 +83,8 @@ class LLMService {
         body: jsonEncode(body),
       );
 
+      print("status: ${response.statusCode} body:${response.body}");
+
       if (response.statusCode == 200) {
         final choices = jsonDecode(response.body)['choices'] as List<dynamic>;
         if (choices.isEmpty || choices[0]['message']['role'] != 'assistant') {

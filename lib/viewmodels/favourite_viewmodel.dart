@@ -8,7 +8,7 @@ class FavouriteViewModel extends ChangeNotifier {
   final FavouriteDatabase _favouriteService = FavouriteDatabase();
   List<Favourite> favourites = [];
   bool isLoading = false;
-  Map<String, String> _queryCache = {};
+  final Map<String, String> _queryCache = {};
 
   FavouriteViewModel() {
     _favouriteService.initializeDatabase().then((_) => _loadFavourites());
@@ -16,12 +16,6 @@ class FavouriteViewModel extends ChangeNotifier {
 
   void refresh() {
     _favouriteService.initializeDatabase().then((_) => _loadFavourites());
-  }
-
-  @override
-  Future<void> dispose() async {
-    super.dispose();
-    await _favouriteService.closeDatabase();
   }
 
   Future<void> _loadFavourites() async {

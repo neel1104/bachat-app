@@ -31,9 +31,9 @@ class Favourite {
     return Favourite(
       id: map['id'],
       title: map['title'],
-      sql: map['sql'],
-      priority: map['priority'],
-      hashKey: map['hashKey'],
+      sql: map['sql'] ?? "",
+      priority: map['priority'] ?? 0,
+      hashKey: map['hashKey'] ?? "",
     );
   }
 
@@ -59,13 +59,14 @@ class Favourite {
 // Database-related operations
 class FavouriteDatabase {
   late Database database;
+  final tableName = 'favourite';
 
   Future<void> initializeDatabase() async {
     database = await openDatabase(
       join(await getDatabasesPath(), 'favourites.db'),
       onCreate: (db, version) {
         return db.execute(
-          'CREATE TABLE favourite(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, sql TEXT, priority INTEGER, hashKey TEXT, visualisationType TEXT)',
+          'CREATE TABLE $tableName(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, sql TEXT, priority INTEGER, hashKey TEXT, visualisationType TEXT)',
         );
       },
       onUpgrade: (db, oldVersion, newVersion) {
@@ -73,7 +74,7 @@ class FavouriteDatabase {
           'DROP TABLE IF EXISTS favourite',
         );
         db.execute(
-          'CREATE TABLE favourite(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, sql TEXT, priority INTEGER, hashKey TEXT, visualisationType TEXT)',
+          'CREATE TABLE $tableName(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, sql TEXT, priority INTEGER, hashKey TEXT, visualisationType TEXT)',
         );
       },
       version: 3,
@@ -87,7 +88,7 @@ class FavouriteDatabase {
 
   Future<Favourite> addFavourite(Favourite favourite) async {
     int insertedID = await database.insert(
-      'favourite',
+      tableName,
       favourite.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -104,7 +105,7 @@ class FavouriteDatabase {
     if (updatedValues.isEmpty) return;
 
     await database.update(
-      'favourites', // Table name
+      tableName, // Table name
       updatedValues, // Values to update
       where: 'id = ?', // Condition
       whereArgs: [id], // Arguments for condition
@@ -113,7 +114,7 @@ class FavouriteDatabase {
 
   Future<void> removeFavourite(int id) async {
     await database.delete(
-      'favourite',
+      tableName,
       where: 'id = ?',
       whereArgs: [id],
     );

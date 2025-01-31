@@ -152,13 +152,16 @@ class AIMessageListItem extends StatelessWidget {
       FavouriteViewModel fvm, BuildContext context) async {
     try {
       await fvm.addFavourite(msg.content);
-      if (context.mounted)
+      if (context.mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Added to favourites.")));
+            .showSnackBar(SnackBar(content: Text("Added to dashboard.")));
+      }
     } catch (e) {
-      if (context.mounted)
+      print("failed to add to favourites due to error: $e");
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("failed to add to favourites.")));
+            SnackBar(content: Text("failed to add to dashboard.")));
+      }
     }
   }
 }

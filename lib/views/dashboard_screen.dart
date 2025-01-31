@@ -54,8 +54,7 @@ class DashboardScreen extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AIChatViewmodel()),
         ChangeNotifierProvider(create: (_) => FavouriteViewModel())
       ], child: AIChatScreen()),
-    ));
-    fvm.refresh();
+    )).then((_) => {fvm.refresh()});
   }
 }
 
@@ -77,12 +76,13 @@ class FavouriteListItem extends StatelessWidget {
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          // crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
                 child: Text(
               favourite.title.isNotEmpty ? favourite.title : "",
               softWrap: true,
+                  style: TextStyle(fontWeight: FontWeight.bold),
             )),
             IconButton(
               onPressed: () => {_handleRemoveFavourite(context, fvm)},
